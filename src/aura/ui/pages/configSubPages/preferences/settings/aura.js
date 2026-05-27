@@ -116,6 +116,7 @@ const functions = {
       if (!userPasswdInput) {
         showFailedAnimation(inputEl);
         acpDialogTitleEl.textContent = "密码不能为空";
+        return;
       }
 
       const crypto = require("crypto");
@@ -199,8 +200,30 @@ const auraSettings = [
           return global.__HUGO_AURA_CONFIG__.auraSettings
             .settingsPasswordEnabled;
         },
-        callbackFn: async (newVal) => {
+        callbackFn: async (newVal, el, _opArea, descriptionArea) => {
           if (typeof newVal !== "boolean") return;
+          if (newVal) {
+            const defaultHash = global.__HUGO_AURA_CONFIG_MGR__
+              .getDefaultConfig()
+              .auraSettings.settingsPasswordWithSalt;
+            if (
+              global.__HUGO_AURA_CONFIG__.auraSettings
+                .settingsPasswordWithSalt === defaultHash
+            ) {
+              el.checked = false;
+              if (descriptionArea) {
+                const originalDesc = "启用后, Aura 设置 UI 需要输入密码才可访问";
+                descriptionArea.textContent =
+                  '请先在下方 "访问密码" 中设置密码, 再启用此项';
+                descriptionArea.classList.add("ase-desc-error-hint");
+                setTimeout(() => {
+                  descriptionArea.textContent = originalDesc;
+                  descriptionArea.classList.remove("ase-desc-error-hint");
+                }, 3000);
+              }
+              return;
+            }
+          }
           global.__HUGO_AURA_CONFIG__.auraSettings.settingsPasswordEnabled =
             newVal;
           if (
@@ -264,11 +287,8 @@ const auraSettings = [
         reload: false,
         tip: true,
         tipTitle: "密码将在本地使用 SHA512 加盐存储",
-        associateVal: ["auraSettings.settingsPasswordEnabled"],
-        auraIf: () => {
-          return global.__HUGO_AURA_CONFIG__.auraSettings
-            .settingsPasswordEnabled;
-        },
+        associateVal: null,
+        auraIf: () => true,
         defaultValue: "",
         placeHolder: "留空表示不修改, 保留已设置值",
         valueGetter: () => {
@@ -301,7 +321,22 @@ const auraSettings = [
             .digest("hex")
             .toUpperCase();
 
-          return await functions.handle2ndPasswordPrompt(result);
+          const promptResult = await functions.handle2ndPasswordPrompt(result);
+
+          // Auto-enable password protection after a password is successfully confirmed
+          if (
+            promptResult.valid &&
+            !global.__HUGO_AURA_CONFIG__.auraSettings.settingsPasswordEnabled
+          ) {
+            global.__HUGO_AURA_CONFIG__.auraSettings.settingsPasswordEnabled =
+              true;
+            const toggleEl = document.getElementById(
+              "enableAuraSettingsPasswd"
+            );
+            if (toggleEl) toggleEl.checked = true;
+          }
+
+          return promptResult;
         },
       },
     ],
