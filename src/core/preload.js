@@ -83,9 +83,8 @@ const __AURA_VERSION__ = "0.2.0-rc1-p3";
           )}, new value: ${value}`
         );
 
-        const isEditingEncSettings = pathName.includes(
-          "auraSettings.settingsPassword"
-        );
+        const isEditingEncSettings =
+          pathName === "auraSettings.settingsPasswordWithSalt";
 
         if (
           isEditingEncSettings &&
