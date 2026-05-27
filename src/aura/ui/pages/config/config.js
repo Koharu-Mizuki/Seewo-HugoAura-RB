@@ -392,6 +392,16 @@ global.__HUGO_AURA_UI_FUNCTIONS__.config = {
     if (!isAuthEnabled) {
       global.__HUGO_AURA_UI_REACTIVES__.config.authenticated = true;
       showOperationsAnimation();
+    } else if (
+      global.__HUGO_AURA_CONFIG__.auraSettings.settingsPasswordWithSalt ===
+      global.__HUGO_AURA_CONFIG_MGR__.getDefaultConfig().auraSettings
+        .settingsPasswordWithSalt
+    ) {
+      // Password protection was enabled but no custom password was ever set
+      // (stored hash is still the default). Auto-reset to prevent permanent lockout.
+      global.__HUGO_AURA_CONFIG__.auraSettings.settingsPasswordEnabled = false;
+      global.__HUGO_AURA_UI_REACTIVES__.config.authenticated = true;
+      showOperationsAnimation();
     } else {
       await window.__HUGO_AURA_GLOBAL__.utils.sleep(50);
       const acsDialogAreaEl = document.getElementsByClassName(
